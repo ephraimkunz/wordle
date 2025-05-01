@@ -95,7 +95,6 @@ int main(int argc, char **argv) {
   }
 
   // Setup wordlist.
-
   wordlist list;
   if (init_wordlist(&list) == -1) {
     return -1;
@@ -137,7 +136,8 @@ int main(int argc, char **argv) {
 
           bool found_somewhere = false;
           for (int j = 0; j < WORD_SIZE; ++j) {
-            if (required[j] == 0 && placement == list.words[w * WORD_SIZE_WITH_TERMINATOR + j]) {
+            if (required[j] == 0 &&
+                placement == list.words[w * WORD_SIZE_WITH_TERMINATOR + j]) {
               found_somewhere = true;
               break;
             }
@@ -172,7 +172,8 @@ int main(int argc, char **argv) {
     if (placement > 0) {
       bool has_placement = false;
       for (int j = 0; j < WORD_SIZE; ++j) {
-        if (required[j] == 0 && placement == list.words[w * WORD_SIZE_WITH_TERMINATOR + j]) {
+        if (required[j] == 0 &&
+            placement == list.words[w * WORD_SIZE_WITH_TERMINATOR + j]) {
           has_placement = true;
           break;
         }

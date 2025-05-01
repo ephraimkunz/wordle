@@ -17,8 +17,6 @@ typedef struct {
   char *words;
 } wordlist;
 
-// TODO: Handle placement_args.
-
 int init_wordlist(wordlist *list) {
   // Wordlist from
   // https://gist.github.com/dracos/dd0668f281e685bad51479e5acaadb93

@@ -1,3 +1,4 @@
+#include "wordle.h"
 #include <assert.h>
 #include <ctype.h>
 #include <fcntl.h>
@@ -8,16 +9,16 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-const int WORD_SIZE = 5;
-const int WORD_SIZE_WITH_TERMINATOR = WORD_SIZE + 1;
-const int ALPHABET_LENGTH = 26;
+static const int WORD_SIZE = 5;
+static const int WORD_SIZE_WITH_TERMINATOR = WORD_SIZE + 1;
+static const int ALPHABET_LENGTH = 26;
 
 typedef struct {
   size_t count;
   char *words;
 } wordlist;
 
-int init_wordlist(wordlist *list) {
+static int init_wordlist(wordlist *list) {
   // Wordlist from
   // https://gist.github.com/dracos/dd0668f281e685bad51479e5acaadb93
   int file = open("words.txt", O_RDONLY);
@@ -43,7 +44,7 @@ int init_wordlist(wordlist *list) {
 
   close(file);
 
-  if (madvise(list->words, list->count, MADV_SEQUENTIAL) == -1) {
+  if (madvise(list->words, info.st_size, MADV_SEQUENTIAL) == -1) {
     perror("Unable to madvise sequential");
     return -1;
   }
@@ -51,8 +52,8 @@ int init_wordlist(wordlist *list) {
   return 0;
 }
 
-int deinit_wordlist(wordlist *list) {
-  if (munmap(list->words, list->count) == -1) {
+static int deinit_wordlist(wordlist *list) {
+  if (munmap(list->words, list->count * WORD_SIZE_WITH_TERMINATOR) == -1) {
     perror("Unable to unmap memory");
     return -1;
   }
@@ -60,36 +61,51 @@ int deinit_wordlist(wordlist *list) {
   return 0;
 }
 
-void usage(void) {
-  printf("wordle <required_arg> <forbidden_arg> <placement_arg>\n\
-    required_arg: 5 character string specifying locations of required characters, - for blanks. Ex: \"br-a-\"\n\
-    forbidden_arg: list of characters forbidden in the final word. Ex: \"qyz\"\n\
-    placement_arg: <character><disallowed location><disallowed location>, 0-indexed. Ex: \"e03d123\"\n");
+char *wordle_get_nth_word(char *buffer, size_t size, size_t n) {
+  if (buffer == NULL || size == 0) {
+    return NULL;
+  }
+
+  if (WORD_SIZE_WITH_TERMINATOR * n >= size) {
+    return NULL;
+  }
+
+  return &buffer[WORD_SIZE_WITH_TERMINATOR * n];
 }
 
-int main(int argc, char **argv) {
-  if (argc != 4) {
-    usage();
-    return -1;
+// placement_arg format: letter followed by 1+ indices where it cannot appear.
+// e.g., "a12b0" means 'a' cannot be in pos 1 or 2, 'b' cannot be in pos 0.
+// (but each of a and b must be somewhere else in the word)
+size_t wordle_wordlist(char *buffer, size_t size, char *required_arg,
+                       char *forbidden_arg, char *placement_arg) {
+  // Check args
+  if (buffer == NULL || size == 0) {
+    return 0;
   }
 
   // Setup required.
   char required[WORD_SIZE];
-  assert(strlen(argv[1]) == WORD_SIZE);
+  memset(required, 0, sizeof(required));
+  if (strlen(required_arg) != WORD_SIZE) {
+    return 0;
+  }
   for (int i = 0; i < WORD_SIZE; ++i) {
-    char letter = argv[1][i];
-    assert(letter == '-' || (letter >= 'a' && letter <= 'z'));
+    char letter = required_arg[i];
+    if (!(letter == '-' || islower(letter))) {
+      return 0;
+    }
     required[i] = letter == '-' ? 0 : letter;
   }
 
   // Setup forbidden.
   bool forbidden[ALPHABET_LENGTH];
-  for (int i = 0; i < ALPHABET_LENGTH; ++i) {
-    forbidden[i] = false;
-  }
-  char *forbidden_char = argv[2];
+  memset(forbidden, 0, sizeof(forbidden));
+
+  char *forbidden_char = forbidden_arg;
   while (*forbidden_char != 0) {
-    assert(*forbidden_char >= 'a' && *forbidden_char <= 'z');
+    if (!islower(*forbidden_char)) {
+      return 0;
+    }
     forbidden[*forbidden_char - 'a'] = true;
     forbidden_char++;
   }
@@ -97,10 +113,13 @@ int main(int argc, char **argv) {
   // Setup wordlist.
   wordlist list;
   if (init_wordlist(&list) == -1) {
-    return -1;
+    return 0;
   }
 
-  for (size_t w = 0; w < list.count; w++) {
+  size_t used_size = 0;
+  for (size_t w = 0; (w < list.count) && (size > used_size) &&
+                     ((size - used_size) >= WORD_SIZE_WITH_TERMINATOR);
+       w++) {
     bool valid = true;
 
     // Check required and forbidden.
@@ -122,22 +141,27 @@ int main(int argc, char **argv) {
     }
 
     // Check placement arg.
-    int placement_length = strlen(argv[3]);
-    char placement = 0;
+    int placement_length = strlen(placement_arg);
+    char current_letter = 0;
     for (int i = 0; i < placement_length; ++i) {
-      char c = argv[3][i];
+      char c = placement_arg[i];
       if (isalpha(c)) {
-        assert(c >= 'a' && c <= 'z');
+        if (!islower(c)) {
+          return 0;
+        }
 
         // When switching required letters, check that the last required letter,
         // if present, is found somewhere in the word.
         if (i > 0) {
-          assert(placement >= 'a' && placement <= 'z');
+          if (!islower(current_letter)) {
+            return 0;
+          }
 
           bool found_somewhere = false;
           for (int j = 0; j < WORD_SIZE; ++j) {
             if (required[j] == 0 &&
-                placement == list.words[w * WORD_SIZE_WITH_TERMINATOR + j]) {
+                current_letter ==
+                    list.words[w * WORD_SIZE_WITH_TERMINATOR + j]) {
               found_somewhere = true;
               break;
             }
@@ -149,13 +173,17 @@ int main(int argc, char **argv) {
           }
         }
 
-        placement = c;
+        current_letter = c;
       } else {
         // Check that letter not in disallowed position.
-        assert(placement >= 'a' && placement <= 'z');
+        if (!islower(current_letter)) {
+          return 0;
+        }
         int disallowed_index = c - '0';
-        assert(disallowed_index < 5 && disallowed_index >= 0);
-        if (placement ==
+        if (disallowed_index >= WORD_SIZE || disallowed_index < 0) {
+          return 0;
+        }
+        if (current_letter ==
             list.words[w * WORD_SIZE_WITH_TERMINATOR + disallowed_index]) {
           valid = false;
           break;
@@ -169,11 +197,11 @@ int main(int argc, char **argv) {
 
     // Check that the last required letter, if present, is found somewhere
     // in the word.
-    if (placement > 0) {
+    if (current_letter > 0) {
       bool has_placement = false;
       for (int j = 0; j < WORD_SIZE; ++j) {
         if (required[j] == 0 &&
-            placement == list.words[w * WORD_SIZE_WITH_TERMINATOR + j]) {
+            current_letter == list.words[w * WORD_SIZE_WITH_TERMINATOR + j]) {
           has_placement = true;
           break;
         }
@@ -186,9 +214,20 @@ int main(int argc, char **argv) {
       continue;
     }
 
-    // Print the candidate.
-    printf("%.*s\n", WORD_SIZE, &list.words[w * WORD_SIZE_WITH_TERMINATOR]);
+    // Output the candidate.
+    for (int i = 0; i < WORD_SIZE; ++i) {
+      buffer[used_size] = list.words[w * WORD_SIZE_WITH_TERMINATOR + i];
+      used_size++;
+
+      // Insert null terminator if we're at the end.
+      if (i == (WORD_SIZE - 1)) {
+        buffer[used_size] = 0;
+        used_size++;
+      }
+    }
   }
 
-  return deinit_wordlist(&list);
+  deinit_wordlist(&list);
+
+  return used_size;
 }

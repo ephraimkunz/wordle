@@ -66,7 +66,8 @@ char *wordle_get_nth_word(char *buffer, size_t size, size_t n) {
     return NULL;
   }
 
-  if (WORD_SIZE_WITH_TERMINATOR * n >= size) {
+  // End of word not past end of buffer.
+  if (WORD_SIZE_WITH_TERMINATOR * n + WORD_SIZE_WITH_TERMINATOR > size) {
     return NULL;
   }
 
@@ -79,7 +80,8 @@ char *wordle_get_nth_word(char *buffer, size_t size, size_t n) {
 size_t wordle_wordlist(char *buffer, size_t size, char *required_arg,
                        char *forbidden_arg, char *placement_arg) {
   // Check args
-  if (buffer == NULL || size == 0) {
+  if (buffer == NULL || size == 0 || required_arg == NULL ||
+      forbidden_arg == NULL || placement_arg == NULL) {
     return 0;
   }
 
@@ -197,7 +199,7 @@ size_t wordle_wordlist(char *buffer, size_t size, char *required_arg,
 
     // Check that the last required letter, if present, is found somewhere
     // in the word.
-    if (current_letter > 0) {
+    if (isalpha(current_letter)) { // We've actually set current_letter, meaning we've entered the above loop.
       bool has_placement = false;
       for (int j = 0; j < WORD_SIZE; ++j) {
         if (required[j] == 0 &&

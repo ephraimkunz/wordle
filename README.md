@@ -8,3 +8,9 @@ wordle <required_arg> <forbidden_arg> <placement_arg>
     forbidden_arg: list of characters forbidden in the final word. Ex: "qyz"
     placement_arg: <character><disallowed location><disallowed location>, 0-indexed. Ex: "e03d123"
 ```
+
+## Building
+* `make test`: Build and run tests
+* `make main`: Build `wordle` CLI binary
+* `make sanitize`: Build CLI and test binary with address and undefined behavior sanitizers
+* `make clean`: Clean all build artifacts

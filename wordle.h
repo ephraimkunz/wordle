@@ -4,7 +4,7 @@
 // buffer: buffer in which to insert words.
 // size: size of the buffer in bytes
 // required_arg: string of the form "b-ea-", which indicates locations of correct letters.
-// fobidden_arg: string of the form "askecsl", which indicates forbidden letters.
+// forbidden_arg: string of the form "askecsl", which indicates forbidden letters.
 // placement_arg: string of the form "<letter><disallowed positions><letter><disallowed positions>..."
 // Used to track letters that are required in the word, but not in certain positions.
 // return value: number of bytes used in buffer. 0 indicates no matches, or an error. Use wordle_get_nth_word

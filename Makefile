@@ -1,7 +1,7 @@
 # Makefile for Wordle CLI and testing with sanitizers and header support
 
 CC := gcc
-CFLAGS := -Wall -Wextra -Wpedantic -std=c17 -O2
+CFLAGS := -Wall -Wextra -Wpedantic -std=c17 -O3
 SANITIZE_FLAGS := -fsanitize=address,undefined -g
 
 SRC := wordle.c

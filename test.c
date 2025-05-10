@@ -41,11 +41,11 @@ void test_wordlist_invalid_args(void) {
   assert(wordle_wordlist(buf, 6, "bread", "", ":") == 0 &&
          "Invalid letter placement 2");
   assert(wordle_wordlist(buf, 6, "bread", "", NULL) == 0 && "Null placement");
-  assert(wordle_wordlist(buf, 6, "br-ad", "e9", NULL) == 0 && "Invalid digit");
-  assert(wordle_wordlist(buf, 6, "br-ad", "e6", NULL) == 0 &&
+  assert(wordle_wordlist(buf, 6, "br-ad", "", "e9") == 0 && "Invalid digit");
+  assert(wordle_wordlist(buf, 6, "br-ad", "", "e6") == 0 &&
          "Invalid digit 2");
-  assert(wordle_wordlist(buf, 6, "br-ad", "6", NULL) == 0 && "Missing char");
-  assert(wordle_wordlist(buf, 6, "br-ad", "e0A9", NULL) == 0 &&
+  assert(wordle_wordlist(buf, 6, "br-ad", "", "6") == 0 && "Missing char");
+  assert(wordle_wordlist(buf, 6, "br-ad", "", "e0A9") == 0 &&
          "Missing char 2");
 }
 
@@ -68,6 +68,15 @@ void test_examples(void) {
   assert(strcmp(wordle_get_nth_word(buf2, count2, 2), "sield") == 0);
   assert(strcmp(wordle_get_nth_word(buf2, count2, 3), "wield") == 0);
   assert(strcmp(wordle_get_nth_word(buf2, count2, 4), "yield") == 0);
+  assert(wordle_get_nth_word(buf2, count2, 5) == NULL);
+
+  wordle_wordlist(buf2, buf_size2, "-----", "p", "a1234e123b0234");
+  assert(count2 == 30);
+  assert(strcmp(wordle_get_nth_word(buf2, count2, 0), "abide") == 0);
+  assert(strcmp(wordle_get_nth_word(buf2, count2, 1), "abode") == 0);
+  assert(strcmp(wordle_get_nth_word(buf2, count2, 2), "abore") == 0);
+  assert(strcmp(wordle_get_nth_word(buf2, count2, 3), "above") == 0);
+  assert(strcmp(wordle_get_nth_word(buf2, count2, 4), "abune") == 0);
   assert(wordle_get_nth_word(buf2, count2, 5) == NULL);
 }
 

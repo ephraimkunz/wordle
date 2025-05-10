@@ -155,10 +155,6 @@ size_t wordle_wordlist(char *buffer, size_t size, char *required_arg,
         // When switching required letters, check that the last required letter,
         // if present, is found somewhere in the word.
         if (i > 0) {
-          if (!islower(current_letter)) {
-            return 0;
-          }
-
           bool found_somewhere = false;
           for (int j = 0; j < WORD_SIZE; ++j) {
             if (required[j] == 0 &&

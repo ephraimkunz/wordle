@@ -10,7 +10,8 @@ wordle <required_arg> <forbidden_arg> <placement_arg>
 ```
 
 ## Building
-* `make test`: Build and run tests
-* `make main`: Build `wordle` CLI binary
+* `make` and `make main`: Build optimized `wordle` CLI binary
+* `make test`: Build and run test binary
 * `make sanitize`: Build CLI and test binary with address and undefined behavior sanitizers
+* `make coverage`  # Generate code coverage HTML report and open
 * `make clean`: Clean all build artifacts

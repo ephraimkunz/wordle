@@ -1,5 +1,6 @@
 #include "wordle.h"
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -16,6 +17,15 @@ void test_nth_word_invalid_args(void) {
 
   char buf3[100];
   assert(wordle_get_nth_word(buf3, 100, 101) == NULL && "Too big n");
+}
+
+void test_nth_word_overflow(void) {
+  char buf[6];
+  // n so large that WORD_SIZE_WITH_TERMINATOR * n + WORD_SIZE_WITH_TERMINATOR
+  // wraps around size_t, defeating the bounds check and returning a pointer
+  // far past the buffer. Must be rejected as invalid.
+  assert(wordle_get_nth_word(buf, sizeof buf, SIZE_MAX) == NULL &&
+         "Overflow n");
 }
 
 void test_wordlist_invalid_args(void) {
@@ -94,6 +104,7 @@ size_t test_performance(void) {
 int main(int argc, char **argv) {
   if (argc == 1) {
     test_nth_word_invalid_args();
+    test_nth_word_overflow();
     test_wordlist_invalid_args();
     test_examples();
   } else if (strcmp(argv[1], "-p") == 0) {

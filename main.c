@@ -11,10 +11,10 @@ static void usage(void) {
 int main(int argc, char **argv) {
     if (argc != 4) {
       usage();
-      return -1;
+      return EXIT_FAILURE;
     }
   
-    size_t buf_size = 100;
+    static const size_t buf_size = 100;
     char buf[buf_size];
   
     size_t count = wordle_wordlist(buf, buf_size, argv[1], argv[2], argv[3]);

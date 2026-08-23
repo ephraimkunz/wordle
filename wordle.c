@@ -62,12 +62,13 @@ static int deinit_wordlist(wordlist *list) {
 }
 
 char *wordle_get_nth_word(char *buffer, size_t size, size_t n) {
-  if (buffer == NULL || size == 0) {
+  // A word with terminator cannot fit in a smaller buffer.
+  if (buffer == NULL || size < WORD_SIZE_WITH_TERMINATOR) {
     return NULL;
   }
 
-  // End of word not past end of buffer.
-  if (WORD_SIZE_WITH_TERMINATOR * n + WORD_SIZE_WITH_TERMINATOR > size) {
+  // Largest valid index, computed without overflowing size_t.
+  if (n > size / WORD_SIZE_WITH_TERMINATOR - 1) {
     return NULL;
   }
 
